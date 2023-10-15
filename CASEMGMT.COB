@@ -1,56 +1,67 @@
-# This COBOL program is for a case management system
 
-# Identification Division
-# Program name is declared here
 IDENTIFICATION DIVISION.
 PROGRAM-ID. CaseManagementSystem.
 
-# Data Division
-# All the variables used in this program are declared here
-DATA DIVISION.
-WORKING-STORAGE SECTION.
-01 Choice PIC 9.
-01 ClientName PIC X(50).
-01 ClientAddress PIC X(100).
-01 CaseWorkerName PIC X(50).
-01 ServiceDate PIC 9(8).
-01 ServiceType PIC X(20).
-01 ServiceDescription PIC X(100).
-01 ClientID PIC 9(5).
-01 CaseID PIC 9(5).
-01 ServiceID PIC 9(5).
-01 ClientFile STATUS IS INITIAL "CLIENTS.DAT".
-01 CaseFile STATUS IS INITIAL "CASES.DAT".
-01 ServiceFile STATUS IS INITIAL "SERVICES.DAT".
-01 ReportFile STATUS IS INITIAL "REPORT.TXT".
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT CLIENT-FILE ASSIGN TO 'CLIENTFILE.DAT'.
+    SELECT CASE-FILE ASSIGN TO 'CASEFILE.DAT'.
+    SELECT SERVICE-FILE ASSIGN TO 'SERVICEFILE.DAT'.
+    SELECT REPORT-FILE ASSIGN TO 'REPORTFILE.DAT'.
 
-# Procedure Division
-# The main logic of the program starts here
+DATA DIVISION.
+FILE SECTION.
+FD  CLIENT-FILE.
+01  CLIENT-RECORD.
+    05  CLIENT-ID          PIC 9(5).
+    05  CLIENT-NAME        PIC X(50).
+    05  CLIENT-ADDRESS     PIC X(100).
+
+FD  CASE-FILE.
+01  CASE-RECORD.
+    05  CASE-ID            PIC 9(5).
+    05  CLIENT-ID          PIC 9(5).
+    05  CASE-WORKER-NAME   PIC X(50).
+
+FD  SERVICE-FILE.
+01  SERVICE-RECORD.
+    05  SERVICE-ID         PIC 9(5).
+    05  CLIENT-ID          PIC 9(5).
+    05  SERVICE-DATE       PIC 9(8).
+    05  SERVICE-TYPE       PIC X(20).
+    05  SERVICE-DESCRIPTION PIC X(100).
+
+FD  REPORT-FILE.
+01  REPORT-RECORD         PIC X(255).
+
+WORKING-STORAGE SECTION.
+01  CHOICE                PIC 9.
+01  EOF-FLAG              PIC X VALUE 'N'.
+    88  EOF-REACHED       VALUE 'Y'.
+01  SEARCH-ID             PIC 9(5).
+
 PROCEDURE DIVISION.
 StartProgram.
-    # The main menu is displayed until the user chooses to exit (Choice 6)
     PERFORM DisplayMainMenu UNTIL Choice = 6
-    DISPLAY "Goodbye!"
+    DISPLAY "Thank you for using the Case Management System. Goodbye!"
     STOP RUN.
 
-# This procedure displays the main menu options
 DisplayMainMenu.
-    DISPLAY "-------------------------"
-    DISPLAY "Case Management System"
-    DISPLAY "-------------------------"
-    DISPLAY "1. Create Client"
-    DISPLAY "2. Create Case"
-    DISPLAY "3. Log Service"
-    DISPLAY "4. Generate Report"
-    DISPLAY "5. Search Client"
-    DISPLAY "6. Exit"
-    DISPLAY "-------------------------"
-    DISPLAY "Enter your choice (1-6):"
+    DISPLAY "----------------------------------------"
+    DISPLAY "Welcome to the Case Management System"
+    DISPLAY "----------------------------------------"
+    DISPLAY "1. Create a new client record"
+    DISPLAY "2. Create a new case record"
+    DISPLAY "3. Log a service provided to a client"
+    DISPLAY "4. Generate a report of all records"
+    DISPLAY "5. Search for a client record"
+    DISPLAY "6. Exit the system"
+    DISPLAY "----------------------------------------"
+    DISPLAY "Please enter your selection (1-6):"
     ACCEPT Choice
-    # Depending on the user's choice, the respective procedure is performed
     PERFORM ProcessChoice.
 
-# This procedure performs the action based on the user's choice
 ProcessChoice.
     EVALUATE Choice
         WHEN 1 PERFORM CreateClient
@@ -59,76 +70,79 @@ ProcessChoice.
         WHEN 4 PERFORM GenerateReport
         WHEN 5 PERFORM SearchClient
         WHEN OTHER
-            DISPLAY "Invalid choice."
+            DISPLAY "Invalid selection. Please choose a number between 1 and 6."
             PERFORM DisplayMainMenu
     END-EVALUATE.
 
-# This procedure creates a new client and writes it to the client file
 CreateClient.
-    DISPLAY "Enter Client Name:"
-    ACCEPT ClientName
-    DISPLAY "Enter Client Address:"
-    ACCEPT ClientAddress
-    DISPLAY "Enter Client ID:"
-    ACCEPT ClientID
-    WRITE ClientFile FROM ClientName ClientAddress ClientID
-    DISPLAY "Client created successfully."
+    DISPLAY "Please enter the name of the client:"
+    ACCEPT CLIENT-NAME
+    DISPLAY "Please enter the address of the client:"
+    ACCEPT CLIENT-ADDRESS
+    DISPLAY "Please enter a unique ID for the client:"
+    ACCEPT CLIENT-ID
+    OPEN OUTPUT CLIENT-FILE
+    WRITE CLIENT-RECORD
+    CLOSE CLIENT-FILE
+    DISPLAY "The client record has been created successfully."
 
-# This procedure creates a new case and writes it to the case file
 CreateCase.
-    DISPLAY "Enter Client ID:"
-    ACCEPT ClientID
-    DISPLAY "Enter Case Worker Name:"
-    ACCEPT CaseWorkerName
-    DISPLAY "Enter Case ID:"
-    ACCEPT CaseID
-    WRITE CaseFile FROM ClientID CaseWorkerName CaseID
-    DISPLAY "Case created successfully."
+    DISPLAY "Please enter the ID of the client for this case:"
+    ACCEPT CLIENT-ID
+    DISPLAY "Please enter the name of the case worker:"
+    ACCEPT CASE-WORKER-NAME
+    DISPLAY "Please enter a unique ID for the case:"
+    ACCEPT CASE-ID
+    OPEN OUTPUT CASE-FILE
+    WRITE CASE-RECORD
+    CLOSE CASE-FILE
+    DISPLAY "The case record has been created successfully."
 
-# This procedure logs a service and writes it to the service file
 LogService.
-    DISPLAY "Enter Client ID:"
-    ACCEPT ClientID
-    DISPLAY "Enter Service Date (YYYYMMDD):"
-    ACCEPT ServiceDate
-    DISPLAY "Enter Service Type:"
-    ACCEPT ServiceType
-    DISPLAY "Enter Service Description:"
-    ACCEPT ServiceDescription
-    DISPLAY "Enter Service ID:"
-    ACCEPT ServiceID
-    WRITE ServiceFile FROM ClientID ServiceDate ServiceType ServiceDescription ServiceID
-    DISPLAY "Service logged successfully."
+    DISPLAY "Please enter the ID of the client who received this service:"
+    ACCEPT CLIENT-ID
+    DISPLAY "Please enter the date the service was provided (YYYYMMDD):"
+    ACCEPT SERVICE-DATE
+    DISPLAY "Please enter the type of service provided:"
+    ACCEPT SERVICE-TYPE
+    DISPLAY "Please enter a description of the service provided:"
+    ACCEPT SERVICE-DESCRIPTION
+    DISPLAY "Please enter a unique ID for the service:"
+    ACCEPT SERVICE-ID
+    OPEN OUTPUT SERVICE-FILE
+    WRITE SERVICE-RECORD
+    CLOSE SERVICE-FILE
+    DISPLAY "The service record has been logged successfully."
 
-# This procedure generates a report by reading from the client, case, and service files
 GenerateReport.
-    OPEN INPUT ClientFile, CaseFile, ServiceFile
-    OPEN OUTPUT ReportFile
-    PERFORM UNTIL EOF ClientFile
-        READ ClientFile
-        READ CaseFile
-        READ ServiceFile
-        DISPLAY "Client: " ClientFile
-        DISPLAY "Client Address: " ClientFile
-        DISPLAY "Case Worker: " CaseFile
-        DISPLAY "Service Date: " ServiceFile
-        DISPLAY "Service Type: " ServiceFile
-        DISPLAY "Service Description: " ServiceFile
-        WRITE ReportFile FROM ClientFile, CaseFile, ServiceFile
+    OPEN INPUT CLIENT-FILE, CASE-FILE, SERVICE-FILE
+    OPEN OUTPUT REPORT-FILE
+    READ CLIENT-FILE AT END SET EOF-REACHED TO TRUE
+    PERFORM UNTIL EOF-REACHED
+        MOVE CLIENT-RECORD TO REPORT-RECORD
+        WRITE REPORT-RECORD
+        READ CLIENT-FILE AT END SET EOF-REACHED TO TRUE
     END-PERFORM
-    CLOSE ClientFile, CaseFile, ServiceFile, ReportFile
-    DISPLAY "Report generated successfully."
+    CLOSE CLIENT-FILE, CASE-FILE, SERVICE-FILE, REPORT-FILE
+    DISPLAY "The report has been generated successfully."
 
-# This procedure searches for a client in the client file
 SearchClient.
-    DISPLAY "Enter Client ID:"
-    ACCEPT ClientID
-    SEARCH ClientFile WITH KEY = ClientID
-    IF FOUND THEN
-        DISPLAY "Client Found: " ClientFile
-        DISPLAY "Client Address: " ClientFile
-    ELSE
+    DISPLAY "Please enter the ID of the Please enter the ID of the client you wish to search for:"
+    
+    ACCEPT SEARCH-ID
+    OPEN INPUT CLIENT-FILE
+    READ CLIENT-FILE AT END SET EOF-REACHED TO TRUE
+    PERFORM UNTIL EOF-REACHED OR CLIENT-ID = SEARCH-ID
+        IF CLIENT-ID = SEARCH-ID THEN
+            DISPLAY "Client Found: " CLIENT-NAME
+            DISPLAY "Client Address: " CLIENT-ADDRESS
+        ELSE
+            READ CLIENT-FILE AT END SET EOF-REACHED TO TRUE
+        END-IF
+    END-PERFORM
+    IF EOF-REACHED THEN
         DISPLAY "Client Not Found."
-    END-IF.
+    CLOSE CLIENT-FILE.
+
 
 
